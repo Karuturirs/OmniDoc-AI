@@ -1,0 +1,19 @@
+torch
+numpy
+qdrant-client
+tqdm
+datasets
+transformers
+Pillow
+python-dotenv
+fastapi
+uvicorn[standard]
+python-multipart
+# pdfminer.six # No longer needed for image extraction
+PyMuPDF # New dependency for PDF rendering
+# The colpali_engine library needs to be installed from its GitHub repo directly
+# as it's not on PyPI.
+# You might need to install git first: sudo apt-get install git
+# pip install git+https://github.com/illuin-tech/colpali.git#subdirectory=colpali_engine
+# If you plan to use Ollama for response generation
+# ollama
