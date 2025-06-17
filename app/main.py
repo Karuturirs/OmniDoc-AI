@@ -23,8 +23,6 @@ import fitz # PyMuPDF
 # Import necessary Qdrant and ColPali libraries
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
-from tqdm import tqdm
-from datasets import load_dataset
 from colpali_engine.models import ColPali, ColPaliProcessor
 
 # Load environment variables from .env file
@@ -160,12 +158,12 @@ class ColPaliRAG:
         print(f"Loading ColPali model: {COLPALI_MODEL_NAME} on {DEVICE}...")
         model = ColPali.from_pretrained(
             COLPALI_MODEL_NAME,
-            torch_dtype=torch.bfloat16, # Use bfloat16 for performance if supported
+            cache_dir="./hf_cache",  # Cache directory for model weights
+            torch_dtype=torch.bfloat16,  # Use bfloat16 for performance if supported
             device_map=DEVICE,
-            trust_remote_code=True,
-            cache_dir="./hf_cache" # Cache directory for model weights
+            trust_remote_code=True
         )
-        model.eval() # Set model to evaluation mode
+        model.eval()  # Set model to evaluation mode
         print("ColPali model loaded.")
         return model
 
@@ -270,6 +268,7 @@ class ColPaliRAG:
         """
         Extracts images from a PDF file and indexes them into Qdrant.
         Checks for duplicate files using content hash.
+       
         """
         print(f"Indexing PDF: {file_name}...")
         
@@ -300,7 +299,12 @@ class ColPaliRAG:
             
             if search_result:
                 print(f"File '{file_name}' (hash: {file_hash}) is already indexed.")
-                return {"message": f"File '{file_name}' is already indexed."}
+                return {
+                    "file_name": file_name,
+                    "file_hash": file_hash,
+                    "indexed_pages": 0,
+                    "message": f"File '{file_name}' is already indexed."
+                }
 
         except Exception as e:
             print(f"Error checking for duplicate file hash: {e}")
@@ -313,7 +317,12 @@ class ColPaliRAG:
             
             success = self._upsert_images_to_qdrant(images, file_hash, file_name)
             if success:
-                return {"message": f"Successfully indexed {len(images)} pages from {file_name} (hash: {file_hash})."}
+                return {
+                    "file_name": file_name,
+                    "file_hash": file_hash,
+                    "indexed_pages": len(images),
+                    "message": f"PDF indexed successfully."
+                }
             else:
                 raise HTTPException(status_code=500, detail="Failed to upsert embeddings to Qdrant.")
         except Exception as e:

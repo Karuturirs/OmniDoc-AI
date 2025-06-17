@@ -16,23 +16,23 @@ services:
       QDRANT__SERVICE__GRPC_PORT: 6334
       QDRANT__SERVICE__HTTP_PORT: 6333
     healthcheck: # Healthcheck to ensure Qdrant is ready before the app starts
-      test: ["CMD-SHELL", "curl -f http://localhost:6333/qdrant || exit 1"]
-      interval: 10s
+      test: ["CMD", "curl", "-f", "http://localhost:6333"]
+      interval: 30s
       timeout: 5s
       retries: 5
       start_period: 20s # Give Qdrant some time to start up
 
   # ColPali RAG application service
-  OmniDoc-AI-app:
+  omnidoc-ai-app:
     build:
       context: . # Build context is the current directory (where Dockerfile is)
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile # Ensure Dockerfile exists at project root
     container_name: omnidoc_ai_app
     ports:
       - "8000:8000" # Expose FastAPI port
     depends_on:
       qdrant:
-        condition: service_healthy # Ensure Qdrant is healthy before starting
+        condition: service_healthy # Ensure Qdrant is healthy before starting (requires Compose v2+)
     environment:
       QDRANT_HOST: qdrant # Use the service name as the hostname for inter-container communication
       QDRANT_PORT: 6333
@@ -42,3 +42,10 @@ services:
       - ./hf_cache:/app/hf_cache
       # Mount a temporary directory for Ollama image saving
       - /tmp:/tmp
+
+# Notes:
+# - Remove any triple backticks or '// filepath:' lines from this file.
+# - If you get healthcheck errors, try removing the healthcheck or replacing curl with wget.
+# - Make sure Dockerfile exists at the root of your project.
+# - If using Compose v1, 'depends_on: condition: service_healthy' may not work; upgrade to Compose v2 if needed.
+# - Ensure all referenced directories (hf_cache, qdrant_storage) exist on your host.
