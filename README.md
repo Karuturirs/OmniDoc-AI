@@ -213,3 +213,4 @@ Indexes a file (PDF, image, or TIFF) into the Qdrant vector database. Supports v
 - See `main.py` for implementation details.
 - Requirements are pinned in `requirements.txt`.
 - Use `.dockerignore` to keep Docker images small.
+
