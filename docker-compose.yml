@@ -23,7 +23,7 @@ services:
       start_period: 20s # Give Qdrant some time to start up
 
   # ColPali RAG application service
-  omnidoc-ai-app:
+  backend:
     build:
       context: . # Build context is the current directory (where Dockerfile is)
       dockerfile: Dockerfile # Ensure Dockerfile exists at project root

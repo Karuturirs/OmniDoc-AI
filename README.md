@@ -160,8 +160,56 @@ Indexes a PDF document's pages as images into the Qdrant vector database. Includ
         -d '{"query_text": "Who developed the ColPali model?"}'
     ```
 
-Important Notes
+4. **Index a File**
+Indexes a file (PDF, image, or TIFF) into the Qdrant vector database. Supports various image and document formats.
+    * Endpoint: POST /index_file/
+    * Content-Type: multipart/form-data
+    * Form Field: file (type: file)
+    * Example (using curl):
+        ```curl
+        curl -X POST "http://localhost:8000/index_file/" \
+            -H "accept: application/json" \
+            -H "Content-Type: multipart/form-data" \
+            -F "file=@/path/to/your/file.pdf"
+        ```
+        Replace /path/to/your/file.pdf with the actual path to your file.
+    Response Body (Example):
+    ```json
+    {
+      "file_name": "example_image.jpg",
+      "file_hash": "b4d3f2c1b0e9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3",
+      "indexed_pages": 1,
+      "message": "File indexed successfully."
+    }
+    ```
+
+## Supported File Types
+- **PDF:** Each page is rendered as an image and indexed.
+- **Images:** JPG, JPEG, PNG, BMP, GIF (single image per file).
+- **TIFF:** Multi-page TIFFs are supported (each page indexed).
+- **DOCX/PPTX:** Not yet supported (planned).
+
+## Important Notes
 * PDF Page Rendering: The system now uses PyMuPDF for high-fidelity PDF page rendering, which significantly improves the quality of visual input for ColPali compared to the previous placeholder approach.
 * Ollama Integration: The generate_response_with_ollama function relies on an Ollama server running and accessible from the Docker container. Ensure Ollama is set up and the llama3.2-vision model is pulled on your host machine or in a separately configured Ollama container.
 * hf_cache Volume: The ./hf_cache volume in docker-compose.yml is crucial. It caches the large ColPali model weights downloaded from Hugging Face, preventing re-downloading them every time the Docker container is rebuilt.
 * Qdrant Data Persistence: The ./qdrant_storage volume ensures that your indexed Qdrant data persists even if you stop and restart your Docker containers.
+
+## Usage
+1. **Build the Docker image:**
+   ```sh
+   docker build -t colpali-rag .
+   # To include Ollama support:
+   docker build --build-arg INSTALL_OLLAMA=true -t colpali-rag-ollama .
+   ```
+2. **Run the container:**
+   ```sh
+   docker run -p 8000:8000 -v $(pwd)/hf_cache:/app/hf_cache colpali-rag
+   ```
+3. **Access the API docs:**
+   - Visit http://localhost:8000/docs
+
+## Development
+- See `main.py` for implementation details.
+- Requirements are pinned in `requirements.txt`.
+- Use `.dockerignore` to keep Docker images small.

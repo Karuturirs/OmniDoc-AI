@@ -15,6 +15,7 @@ from contextlib import asynccontextmanager # For lifespan events
 # FastAPI imports
 from fastapi import FastAPI, UploadFile, File, HTTPException, status
 from pydantic import BaseModel
+from starlette.responses import JSONResponse
 
 # PDF processing import
 # from pdfminer.high_level import extract_pages # No longer needed for image extraction
@@ -33,7 +34,6 @@ QDRANT_HOST = os.getenv("QDRANT_HOST", "localhost")
 QDRANT_PORT = int(os.getenv("QDRANT_PORT", 6333))
 COLLECTION_NAME = os.getenv("COLLECTION_NAME", "mahabodha_demo")
 COLPALI_MODEL_NAME = "vidore/colpali-v1.2"
-DATASET_NAME = "Pran10/ColpaliTest" # Used for initial dataset indexing if needed
 BATCH_SIZE = 4 # Batch size for processing images
 TOP_K_RETRIEVAL = 4 # Number of top results to retrieve
 
@@ -126,6 +126,34 @@ def extract_images_from_pdf(pdf_file_path: BytesIO) -> List[Image.Image]:
 
     return images
 
+def extract_images_from_file(file: UploadFile, file_content: BytesIO) -> List[Image.Image]:
+    """
+    Extract images from supported file types: PDF, images (JPG, PNG, TIFF), and placeholder for DOCX/PPTX.
+    """
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext == ".pdf":
+        return extract_images_from_pdf(file_content)
+    elif ext in [".jpg", ".jpeg", ".png", ".bmp", ".gif"]:
+        try:
+            img = Image.open(file_content)
+            return [img]
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Failed to process image: {e}")
+    elif ext in [".tiff", ".tif"]:
+        try:
+            img = Image.open(file_content)
+            images = []
+            for i in range(getattr(img, "n_frames", 1)):
+                img.seek(i)
+                images.append(img.copy())
+            return images
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Failed to process TIFF: {e}")
+    elif ext in [".docx", ".pptx"]:
+        # Placeholder: implement DOCX/PPTX to image extraction if needed
+        raise HTTPException(status_code=415, detail="DOCX/PPTX support not implemented yet.")
+    else:
+        raise HTTPException(status_code=415, detail="Unsupported file type.")
 
 # --- Main RAG Class ---
 
@@ -564,6 +592,32 @@ async def perform_query(request: QueryRequest):
         answer=final_answer,
         retrieved_documents=retrieved_docs
     )
+
+@app.post("/index_file/", summary="Index a file (PDF, image, TIFF) for RAG")
+async def index_file(file: UploadFile = File(...)):
+    """
+    Uploads a file (PDF, image, TIFF), extracts images, and indexes them into Qdrant.
+    Checks for duplicates using file hash.
+    """
+    ext = os.path.splitext(file.filename)[1].lower()
+    supported_types = [".pdf", ".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tiff", ".tif"]
+    if ext not in supported_types:
+        raise HTTPException(status_code=400, detail="Unsupported file type. Only PDF, image, and TIFF files are accepted.")
+    file_content_bytes = await file.read()
+    file_content_buffer = BytesIO(file_content_bytes)
+    try:
+        images = extract_images_from_file(file, file_content_buffer)
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to extract images: {e}")
+    # Use file hash for deduplication
+    file_hash = calculate_file_hash(file_content_buffer)
+    success = rag_system._upsert_images_to_qdrant(images, file_hash, file.filename)
+    if success:
+        return {"file_name": file.filename, "file_hash": file_hash, "indexed_pages": len(images), "message": f"File indexed successfully."}
+    else:
+        raise HTTPException(status_code=500, detail="Failed to upsert embeddings to Qdrant.")
 
 # --- Main script execution for local testing (optional) ---
 if __name__ == "__main__":
