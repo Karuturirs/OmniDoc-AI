@@ -193,4 +193,5 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 qdrant_storage/
-hf_cache/
+/app/hf_cache/*
+!/app/hf_cache/.gitkeep
