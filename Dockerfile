@@ -1,54 +1,55 @@
 # syntax=docker/dockerfile:1.4
 
+### --- Stage 1: Build and Install Dependencies ---
 FROM python:3.10-slim as builder
 
 WORKDIR /app
 
-# Install build tools and system dependencies
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
+# Install system/build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
-    curl \
     fonts-dejavu-core \
     libmupdf-dev \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install Python dependencies (optionally Ollama)
-ARG INSTALL_OLLAMA=false
-COPY ./app/requirements.txt ./
+# Copy requirements
+COPY ./app/requirements.txt .
+
+# Upgrade pip and install dependencies
 RUN pip install --upgrade pip && \
-    if [ "$INSTALL_OLLAMA" = "true" ]; then \
-      pip install --no-cache-dir '.[ollama]'; \
-    else \
-      pip install --no-cache-dir -r requirements.txt; \
-    fi && \
-    pip install --no-cache-dir colpali_engine && \
+    pip install --no-cache-dir -r requirements.txt && \
     rm -rf /root/.cache/pip
 
-
-# Second stage: minimal runtime image
+### --- Stage 2: Runtime Container ---
 FROM python:3.10-slim
 
 WORKDIR /app
 
-# System dependencies for runtime only
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
+# Set HuggingFace model cache directory
+ENV HF_HOME=/app/hf_cache
+
+# Runtime-only system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
     fonts-dejavu-core \
     libmupdf-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy installed Python packages from builder
-COPY --from=builder /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
-COPY --from=builder /usr/local/bin /usr/local/bin
+# Copy installed Python packages and scripts from builder
+COPY --from=builder /usr/local /usr/local
+
+# Copy model cache
+COPY --from=builder /app/hf_cache /app/hf_cache
 
 # Copy application code
 COPY ./app .
 
-# Set HuggingFace cache directory (mount as volume for model sharing)
-ENV HF_HOME=/app/hf_cache
+# Set HuggingFace model cache directory
 VOLUME ["/app/hf_cache"]
+
+# Optional: fallback for PyTorch if using MPS
+ENV PYTORCH_ENABLE_MPS_FALLBACK=1
+
 
 EXPOSE 8000
 

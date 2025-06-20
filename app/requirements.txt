@@ -1,15 +1,10 @@
-torch==2.2.2
-numpy==2.2.6
-qdrant-client==1.8.2
-tqdm==4.66.2
-transformers==4.41.2
-Pillow==11.2.1
-python-dotenv==1.0.1
-fastapi==0.115.13
-uvicorn[standard]==0.29.0
-python-multipart==0.0.20
-PyMuPDF==1.24.4
-# colpali_engine must be installed from GitHub, not PyPI
-# pip install git+https://github.com/illuin-tech/colpali.git#subdirectory=colpali_engine
-# To enable Ollama support, build with --build-arg INSTALL_OLLAMA=true or pip install ollama==0.2.0
-ollama==0.5.0; extra == "ollama"
+torch==2.2.1             
+numpy==1.26.4            
+qdrant-client==1.8.2  
+Pillow==11.2.1            
+python-dotenv==1.0.1       
+fastapi==0.115.13          
+uvicorn[standard]==0.29.0  
+python-multipart==0.0.20  
+PyMuPDF==1.24.4          
+colpali-engine>=0.3.0,<0.4.0  
