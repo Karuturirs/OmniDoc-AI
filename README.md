@@ -214,3 +214,26 @@ Indexes a file (PDF, image, or TIFF) into the Qdrant vector database. Supports v
 - Requirements are pinned in `requirements.txt`.
 - Use `.dockerignore` to keep Docker images small.
 
+### Run your Python application locally on port 8000:
+
+1. Create and activate a virtual environment:
+```
+python3 -m venv venv
+source venv/bin/activate
+```
+
+2. Upgrade pip:
+```
+pip install --upgrade pip
+```
+
+3. Install requirements:
+```
+pip install -r app/requirements.txt
+pip install colpali_engine
+```
+4. Run the application:
+```
+cd app
+uvicorn main:app --host 0.0.0.0 --port 8000
+```

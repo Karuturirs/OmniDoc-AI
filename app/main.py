@@ -36,6 +36,7 @@ COLLECTION_NAME = os.getenv("COLLECTION_NAME", "mahabodha_demo")
 COLPALI_MODEL_NAME = "vidore/colpali-v1.2"
 BATCH_SIZE = 4 # Batch size for processing images
 TOP_K_RETRIEVAL = 4 # Number of top results to retrieve
+MODEL_CACHE_DIR=os.getenv("HF_HOME", "./hf_cache"),
 
 # Determine device for ColPali model (CPU or MPS/CUDA if available)
 if torch.backends.mps.is_available():
@@ -128,7 +129,7 @@ def extract_images_from_pdf(pdf_file_path: BytesIO) -> List[Image.Image]:
 
 def extract_images_from_file(file: UploadFile, file_content: BytesIO) -> List[Image.Image]:
     """
-    Extract images from supported file types: PDF, images (JPG, PNG, TIFF), and placeholder for DOCX/PPTX.
+    Extract images from supported file types: PDF, images (JPG, PNG, TIFF), text files (TXT, MD), and placeholder for DOCX/PPTX.
     """
     ext = os.path.splitext(file.filename)[1].lower()
     if ext == ".pdf":
@@ -149,6 +150,35 @@ def extract_images_from_file(file: UploadFile, file_content: BytesIO) -> List[Im
             return images
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Failed to process TIFF: {e}")
+    elif ext in [".txt", ".md"]:
+        try:
+            file_content.seek(0)
+            text = file_content.read().decode("utf-8")
+            # Render text as image
+            from PIL import ImageDraw, ImageFont
+            width, height = 800, 1000
+            img = Image.new('RGB', (width, height), color='white')
+            draw = ImageDraw.Draw(img)
+            try:
+                font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+                font = ImageFont.truetype(font_path, 20) if os.path.exists(font_path) else ImageFont.load_default()
+            except Exception:
+                font = ImageFont.load_default()
+            # Wrap text to fit image width
+            import textwrap
+            margin, offset = 40, 40
+            for line in text.splitlines():
+                wrapped = textwrap.wrap(line, width=90)
+                for subline in wrapped:
+                    draw.text((margin, offset), subline, font=font, fill=(0,0,0))
+                    offset += 28
+                    if offset > height - 40:
+                        break
+                if offset > height - 40:
+                    break
+            return [img]
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Failed to process text file: {e}")
     elif ext in [".docx", ".pptx"]:
         # Placeholder: implement DOCX/PPTX to image extraction if needed
         raise HTTPException(status_code=415, detail="DOCX/PPTX support not implemented yet.")
@@ -186,8 +216,9 @@ class ColPaliRAG:
         print(f"Loading ColPali model: {COLPALI_MODEL_NAME} on {DEVICE}...")
         model = ColPali.from_pretrained(
             COLPALI_MODEL_NAME,
-            cache_dir="./hf_cache",  # Cache directory for model weights
+            cache_dir= MODEL_CACHE_DIR,  # Cache directory for model weights
             torch_dtype=torch.bfloat16,  # Use bfloat16 for performance if supported
+            local_files_only=True,
             device_map=DEVICE,
             trust_remote_code=True
         )
@@ -198,7 +229,9 @@ class ColPaliRAG:
     def _load_colpali_processor(self):
         """Loads the ColPali processor."""
         print(f"Loading ColPali processor: {COLPALI_MODEL_NAME}...")
-        processor = ColPaliProcessor.from_pretrained(COLPALI_MODEL_NAME)
+        processor = ColPaliProcessor.from_pretrained(COLPALI_MODEL_NAME,
+                                                     cache_dir= MODEL_CACHE_DIR,
+                                                     local_files_only=True)
         print("ColPali processor loaded.")
         return processor
 
