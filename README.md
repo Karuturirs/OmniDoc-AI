@@ -237,3 +237,8 @@ pip install colpali_engine
 cd app
 uvicorn main:app --host 0.0.0.0 --port 8000
 ```
+
+or 
+```export HF_HOME=/Users/Ravi.Sankar.Karuturi/Documents/Code/OmniDoc-AI/app/hf_cache 
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+```

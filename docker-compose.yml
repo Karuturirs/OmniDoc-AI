@@ -24,9 +24,7 @@ services:
 
   # ColPali RAG application service
   backend:
-    build:
-      context: . # Build context is the current directory (where Dockerfile is)
-      dockerfile: Dockerfile # Ensure Dockerfile exists at project root
+    image: karuturirs/omnidoc-ai:latest
     container_name: omnidoc_ai_app
     ports:
       - "8000:8000" # Expose FastAPI port
@@ -39,7 +37,7 @@ services:
       COLLECTION_NAME: mahabodha_demo
     volumes:
       # Mount a volume for caching Hugging Face models, preventing re-download on rebuilds
-      - ./hf_cache:/app/hf_cache
+      - ./app/hf_cache:/app/hf_cache
       # Mount a temporary directory for Ollama image saving
       - /tmp:/tmp
 

@@ -36,7 +36,9 @@ COLLECTION_NAME = os.getenv("COLLECTION_NAME", "mahabodha_demo")
 COLPALI_MODEL_NAME = "vidore/colpali-v1.2"
 BATCH_SIZE = 4 # Batch size for processing images
 TOP_K_RETRIEVAL = 4 # Number of top results to retrieve
-MODEL_CACHE_DIR=os.getenv("HF_HOME", "./hf_cache"),
+MODEL_CACHE_DIR = os.getenv("HF_HOME", "./hf_cache")
+
+print(f"MODEL_CACHE_DIR: {MODEL_CACHE_DIR}")
 
 # Determine device for ColPali model (CPU or MPS/CUDA if available)
 if torch.backends.mps.is_available():
@@ -47,6 +49,8 @@ else:
     DEVICE = "cpu"
 
 print(f"Using device: {DEVICE}")
+
+DEVICE = "cpu"
 
 # --- Helper Functions ---
 
