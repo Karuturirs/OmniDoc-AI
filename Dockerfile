@@ -38,9 +38,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy installed Python packages and scripts from builder
 COPY --from=builder /usr/local /usr/local
 
-# Copy model cache
-COPY --from=builder /app/hf_cache /app/hf_cache
-
 # Copy application code
 COPY ./app .
 
