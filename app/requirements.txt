@@ -1,6 +1,6 @@
 torch==2.2.1             
 numpy==1.26.4            
-qdrant-client==1.8.2  
+qdrant-client==1.14.3  
 Pillow==11.2.1            
 python-dotenv==1.0.1       
 fastapi==0.115.13          

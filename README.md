@@ -242,3 +242,10 @@ or
 ```export HF_HOME=/Users/Ravi.Sankar.Karuturi/Documents/Code/OmniDoc-AI/app/hf_cache 
 uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
+```
+# The '&' at the end runs it in the background
+nohup uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+```
+
+# Redirect stdout to my_app.log and stderr to the same place (2>&1)
+uvicorn app.main:app --host localhost --port 8000 > /var/log/omni_doc_ai.log 2>&1 &

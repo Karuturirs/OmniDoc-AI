@@ -1,5 +1,5 @@
-mkdir -p /Users/Ravi.Sankar.Karuturi/tmp/hf_cache
-export HF_HOME=/Users/Ravi.Sankar.Karuturi/tmp/hf_cache
+mkdir -p /mnt/rv-tmp/hf_cache
+export HF_HOME=/mnt/rv-tmp/hf_cache
 
 # Activate your venv if using one
 python3 -m venv .venv
